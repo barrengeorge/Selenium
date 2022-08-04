@@ -28,23 +28,7 @@ module Selenium
       #
 
       class Driver < WebDriver::Driver
-        include DriverExtensions::HasWebStorage
-        include DriverExtensions::TakesScreenshot
-
-        def initialize(opts = {})
-          opts[:desired_capabilities] ||= Remote::Capabilities.internet_explorer
-
-          opts[:url] ||= service_url(opts)
-
-          listener = opts.delete(:listener)
-          desired_capabilities = opts.delete(:desired_capabilities)
-          options = opts.delete(:options)
-
-          @bridge = Remote::Bridge.new(opts)
-          @bridge.create_session(desired_capabilities, options)
-
-          super(@bridge, listener: listener)
-        end
+        EXTENSIONS = [DriverExtensions::HasWebStorage].freeze
 
         def browser
           :internet_explorer

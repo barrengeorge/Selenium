@@ -17,12 +17,11 @@
 
 """A simple web server for testing purpose.
 It serves the testing html pages that are needed by the webdriver unit tests."""
-
+import contextlib
 import logging
 import os
-import socket
+import re
 import threading
-from io import open
 try:
     from urllib import request as urllib_request
 except ImportError:
@@ -49,12 +48,14 @@ if not os.path.isdir(HTML_ROOT):
     LOGGER.error(message)
     assert 0, message
 
-DEFAULT_HOST = "127.0.0.1"
+DEFAULT_HOST = "localhost"
+DEFAULT_HOST_IP = "127.0.0.1"
 DEFAULT_PORT = 8000
 
 
 class HtmlOnlyHandler(BaseHTTPRequestHandler):
     """Http handler."""
+
     def do_GET(self):
         """GET method handler."""
         try:
@@ -66,14 +67,55 @@ class HtmlOnlyHandler(BaseHTTPRequestHandler):
                 </body></html>""".format(page_number=path[5:])
                 html = html.encode('utf-8')
             else:
-                with open(os.path.join(HTML_ROOT, path), 'r', encoding='latin-1') as f:
+                with open(os.path.join(HTML_ROOT, path), encoding='latin-1') as f:
                     html = f.read().encode('utf-8')
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
             self.wfile.write(html)
-        except IOError:
-            self.send_error(404, 'File Not Found: %s' % path)
+        except OSError:
+            self.send_error(404, f"File Not Found: {path}")
+
+    def do_POST(self):
+        """POST method handler."""
+        try:
+            remaining_bytes = int(self.headers['content-length'])
+            contents = ""
+            line = self.rfile.readline()
+            contents += line.decode("utf-8")
+            remaining_bytes -= len(line)
+            line = self.rfile.readline()
+            contents += line.decode("utf-8")
+            remaining_bytes -= len(line)
+            fn = re.findall(r'Content-Disposition.*name="upload"; filename="(.*)"', line.decode("utf-8"))
+            if not fn:
+                self.send_error(500, f"File not found. {contents}")
+                return
+            line = self.rfile.readline()
+            remaining_bytes -= len(line)
+            contents += line.decode("utf-8")
+            line = self.rfile.readline()
+            remaining_bytes -= len(line)
+            contents += line.decode("utf-8")
+            preline = self.rfile.readline()
+            remaining_bytes -= len(preline)
+            while remaining_bytes > 0:
+                line = self.rfile.readline()
+                remaining_bytes -= len(line)
+                contents += line.decode("utf-8")
+
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+            self.wfile.write(
+                f"""<!doctype html>
+                {contents}
+                <script>window.top.window.onUploadDone();</script>
+                """.encode()
+            )
+        except Exception as e:
+            self.send_error(500, f"Error found: {e}")
 
     def log_message(self, format, *args):
         """Override default to avoid trashing stderr"""
@@ -84,9 +126,10 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     pass
 
 
-class SimpleWebServer(object):
+class SimpleWebServer:
     """A very basic web server."""
-    def __init__(self, host=DEFAULT_HOST, port=DEFAULT_PORT):
+
+    def __init__(self, host=DEFAULT_HOST_IP, port=DEFAULT_PORT):
         self.stop_serving = False
         host = host
         port = port
@@ -96,8 +139,8 @@ class SimpleWebServer(object):
                 self.host = host
                 self.port = port
                 break
-            except socket.error:
-                LOGGER.debug("port %d is in use, trying to next one" % port)
+            except OSError:
+                LOGGER.debug(f"port {port} is in use, trying to next one")
                 port += 1
 
         self.thread = threading.Thread(target=self._run_web_server)
@@ -116,16 +159,14 @@ class SimpleWebServer(object):
     def stop(self):
         """Stops the server."""
         self.stop_serving = True
-        try:
-            # This is to force stop the server loop
-            urllib_request.URLopener().open("http://%s:%d" % (self.host, self.port))
-        except IOError:
-            pass
-        LOGGER.info("Shutting down the webserver")
-        self.thread.join()
+        with contextlib.suppress(IOError):
+            _ = urllib_request.urlopen(f"http://{self.host}:{self.port}")
 
-    def where_is(self, path):
-        return "http://%s:%d/%s" % (self.host, self.port, path)
+    def where_is(self, path, localhost=False) -> str:
+        # True force serve the page from localhost
+        if localhost:
+            return f"http://{DEFAULT_HOST}:{self.port}/{path}"
+        return f"http://{self.host}:{self.port}/{path}"
 
 
 def main(argv=None):
@@ -138,16 +179,16 @@ def main(argv=None):
 
     parser = OptionParser("%prog [options]")
     parser.add_option("-p", "--port", dest="port", type="int",
-                      help="port to listen (default: %s)" % DEFAULT_PORT,
+                      help=f"port to listen (default: {DEFAULT_PORT})",
                       default=DEFAULT_PORT)
 
     opts, args = parser.parse_args(argv[1:])
     if args:
         parser.error("wrong number of arguments")  # Will exit
 
-    server = SimpleWebServer(opts.port)
+    server = SimpleWebServer(port=opts.port)
     server.start()
-    print("Server started on port %s, hit CTRL-C to quit" % opts.port)
+    print(f"Server started on port {opts.port}, hit CTRL-C to quit")
     try:
         while 1:
             sleep(0.1)

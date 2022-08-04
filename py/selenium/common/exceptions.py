@@ -19,22 +19,24 @@
 Exceptions that may happen in all the webdriver code.
 """
 
+from typing import Optional, Sequence
+
 
 class WebDriverException(Exception):
     """
     Base webdriver exception.
     """
 
-    def __init__(self, msg=None, screen=None, stacktrace=None):
+    def __init__(self, msg: Optional[str] = None, screen: Optional[str] = None, stacktrace: Optional[Sequence[str]] = None) -> None:
         self.msg = msg
         self.screen = screen
         self.stacktrace = stacktrace
 
-    def __str__(self):
+    def __str__(self) -> str:
         exception_msg = "Message: %s\n" % self.msg
-        if self.screen is not None:
+        if self.screen:
             exception_msg += "Screenshot: available via screen\n"
-        if self.stacktrace is not None:
+        if self.stacktrace:
             stacktrace = "\n".join(self.stacktrace)
             exception_msg += "Stacktrace:\n%s" % stacktrace
         return exception_msg
@@ -91,6 +93,14 @@ class NoSuchAttributeException(WebDriverException):
     pass
 
 
+class NoSuchShadowRootException(WebDriverException):
+    """
+    Thrown when trying to access the shadow root of an element when it does not
+    have a shadow root attached.
+    """
+    pass
+
+
 class StaleElementReferenceException(WebDriverException):
     """
     Thrown when a reference to an element is now "stale".
@@ -126,12 +136,13 @@ class UnexpectedAlertPresentException(WebDriverException):
     Usually raised when  an unexpected modal is blocking the webdriver from executing
     commands.
     """
-    def __init__(self, msg=None, screen=None, stacktrace=None, alert_text=None):
-        super(UnexpectedAlertPresentException, self).__init__(msg, screen, stacktrace)
+
+    def __init__(self, msg: Optional[str] = None, screen: Optional[str] = None, stacktrace: Optional[Sequence[str]] = None, alert_text: Optional[str] = None) -> None:
+        super().__init__(msg, screen, stacktrace)
         self.alert_text = alert_text
 
-    def __str__(self):
-        return "Alert Text: %s\n%s" % (self.alert_text, super(UnexpectedAlertPresentException, self).__str__())
+    def __str__(self) -> str:
+        return f"Alert Text: {self.alert_text}\n{super().__str__()}"
 
 
 class NoAlertPresentException(WebDriverException):
@@ -158,7 +169,7 @@ class ElementNotVisibleException(InvalidElementStateException):
 class ElementNotInteractableException(InvalidElementStateException):
     """
     Thrown when an element is present in the DOM but interactions
-    with that element will hit another element do to paint order
+    with that element will hit another element due to paint order
     """
     pass
 
@@ -215,7 +226,7 @@ class UnexpectedTagNameException(WebDriverException):
     pass
 
 
-class InvalidSelectorException(NoSuchElementException):
+class InvalidSelectorException(WebDriverException):
     """
     Thrown when the selector which is used to find an element does not return
     a WebElement. Currently this only happens when the selector is an xpath
@@ -273,7 +284,7 @@ class ScreenshotException(WebDriverException):
 class ElementClickInterceptedException(WebDriverException):
     """
     The Element Click command could not be completed because the element receiving the events
-    is obscuring the element that was requested clicked.
+    is obscuring the element that was requested to be clicked.
     """
     pass
 
@@ -288,7 +299,7 @@ class InsecureCertificateException(WebDriverException):
 
 class InvalidCoordinatesException(WebDriverException):
     """
-    The coordinates provided to an interactions operation are invalid.
+    The coordinates provided to an interaction's operation are invalid.
     """
     pass
 
@@ -310,6 +321,6 @@ class SessionNotCreatedException(WebDriverException):
 
 class UnknownMethodException(WebDriverException):
     """
-    The requested command matched a known URL but did not match an method for that URL.
+    The requested command matched a known URL but did not match any methods for that URL.
     """
     pass

@@ -80,6 +80,9 @@ namespace OpenQA.Selenium
         public string missedJsReferencePage = EnvironmentManager.Instance.UrlBuilder.WhereIs("missedJsReference.html");
         public string authenticationPage = EnvironmentManager.Instance.UrlBuilder.WhereIs("basicAuth");
         public string html5Page = EnvironmentManager.Instance.UrlBuilder.WhereIs("html5Page.html");
+        public string shadowRootPage = EnvironmentManager.Instance.UrlBuilder.WhereIs("shadowRootPage.html");
+        public string scrollFrameOutOfViewport = EnvironmentManager.Instance.UrlBuilder.WhereIs("scrolling_tests/frame_with_nested_scrolling_frame_out_of_view.html");
+        public string scrollFrameInViewport = EnvironmentManager.Instance.UrlBuilder.WhereIs("scrolling_tests/frame_with_nested_scrolling_frame.html");
 
         protected IWebDriver driver;
 

@@ -39,18 +39,11 @@ module Selenium
           persistent_hover: 'enablePersistentHover',
           require_window_focus: 'requireWindowFocus',
           use_per_process_proxy: 'ie.usePerProcessProxy',
-          validate_cookie_document_type: 'ie.validateCookieDocumentType'
+          use_legacy_file_upload_dialog_handling: 'ie.useLegacyFileUploadDialogHandling',
+          attach_to_edge_chrome: 'ie.edgechromium',
+          edge_executable_path: 'ie.edgepath'
         }.freeze
-
-        CAPABILITIES.each_key do |key|
-          define_method key do
-            @options[key]
-          end
-
-          define_method "#{key}=" do |value|
-            @options[key] = value
-          end
-        end
+        BROWSER = 'internet explorer'
 
         attr_reader :args
 
@@ -59,12 +52,12 @@ module Selenium
         #
         # @example
         #   options = Selenium::WebDriver::IE::Options.new(args: ['--host=127.0.0.1'])
-        #   driver = Selenium::WebDriver.for(:ie, options: options)
+        #   driver = Selenium::WebDriver.for(:ie, capabilities: options)
         #
         # @example
         #   options = Selenium::WebDriver::IE::Options.new
         #   options.element_scroll_behavior = Selenium::WebDriver::IE::Options::SCROLL_BOTTOM
-        #   driver = Selenium::WebDriver.for(:ie, options: options)
+        #   driver = Selenium::WebDriver.for(:ie, capabilities: options)
         #
         # @param [Hash] opts the pre-defined options
         # @option opts [Array<String>] args
@@ -85,10 +78,10 @@ module Selenium
         # @option opts [Boolean] validate_cookie_document_type
         #
 
-        def initialize(args: nil, **opts)
-          super(opts)
+        def initialize(**opts)
+          @args = (opts.delete(:args) || []).to_set
+          super(**opts)
 
-          @args = (args || []).to_set
           @options[:native_events] = true if @options[:native_events].nil?
         end
 
@@ -102,15 +95,11 @@ module Selenium
           @args << arg
         end
 
-        #
-        # @api private
-        #
+        private
 
-        def as_json(*)
-          options = super
+        def process_browser_options(browser_options)
+          options = browser_options[KEY]
           options['ie.browserCommandLineSwitches'] = @args.to_a.join(' ') if @args.any?
-
-          {KEY => generate_as_json(options)}
         end
       end # Options
     end # IE

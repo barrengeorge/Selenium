@@ -13,30 +13,30 @@ namespace OpenQA.Selenium.DevTools
     public class DevToolsLogTest : DevToolsTestFixture
     {
         [Test]
-        [IgnoreBrowser(Selenium.Browser.EdgeLegacy, "Legacy Edge does not support Chrome DevTools Protocol")]
         [IgnoreBrowser(Selenium.Browser.IE, "IE does not support Chrome DevTools Protocol")]
         [IgnoreBrowser(Selenium.Browser.Firefox, "Firefox does not support Chrome DevTools Protocol")]
         [IgnoreBrowser(Selenium.Browser.Safari, "Safari does not support Chrome DevTools Protocol")]
         public async Task VerifyEntryAddedAndClearLog()
         {
+            var domains = session.GetVersionSpecificDomains<V104.DevToolsSessionDomains>();
             ManualResetEventSlim sync = new ManualResetEventSlim(false);
-            EventHandler<Log.EntryAddedEventArgs> entryAddedHandler = (sender, e) =>
+            EventHandler<V104.Log.EntryAddedEventArgs> entryAddedHandler = (sender, e) =>
             {
                 Assert.That(e.Entry.Text.Contains("404"));
-                Assert.That(e.Entry.Level == "error");
+                Assert.That(e.Entry.Level == V104.Log.LogEntryLevelValues.Error);
                 sync.Set();
             };
 
-            await session.Log.Enable();
-            session.Log.EntryAdded += entryAddedHandler;
+            await domains.Log.Enable();
+            domains.Log.EntryAdded += entryAddedHandler;
 
             driver.Url = EnvironmentManager.Instance.UrlBuilder.WhereIsSecure("notValidPath");
             sync.Wait(TimeSpan.FromSeconds(5));
 
-            session.Log.EntryAdded -= entryAddedHandler;
+            domains.Log.EntryAdded -= entryAddedHandler;
 
-            await session.Log.Clear();
-            await session.Log.Disable();
+            await domains.Log.Clear();
+            await domains.Log.Disable();
         }
     }
 }

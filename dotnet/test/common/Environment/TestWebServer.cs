@@ -12,18 +12,20 @@ namespace OpenQA.Selenium.Environment
     {
         private Process webserverProcess;
 
-        private string standaloneTestJar = @"java/client/test/org/openqa/selenium/environment/appserver_deploy.jar";
+        private string standaloneTestJar = @"java/test/org/openqa/selenium/environment/appserver_deploy.jar";
         private string projectRootPath;
         private bool captureWebServerOutput;
         private bool hideCommandPrompt;
+        private string javaHomeDirectory;
 
         private StringBuilder outputData = new StringBuilder();
 
-        public TestWebServer(string projectRoot, bool captureWebServerOutput, bool hideCommandPrompt)
+        public TestWebServer(string projectRoot, TestWebServerConfig config)
         {
-            projectRootPath = projectRoot;
-            this.captureWebServerOutput = captureWebServerOutput;
-            this.hideCommandPrompt = hideCommandPrompt;
+            this.projectRootPath = projectRoot;
+            this.captureWebServerOutput = config.CaptureConsoleOutput;
+            this.hideCommandPrompt = config.HideCommandPromptWindow;
+            this.javaHomeDirectory = config.JavaHomeDirectory;
         }
 
         public void Start()
@@ -37,7 +39,7 @@ namespace OpenQA.Selenium.Environment
                         string.Format(
                             "Test webserver jar at {0} didn't exist. Project root is {2}. Please build it using something like {1}.",
                             standaloneTestJar,
-                            "bazel build //java/client/test/org/openqa/selenium/environment:appserver_deploy.jar",
+                            "bazel build //java/test/org/openqa/selenium/environment:appserver_deploy.jar",
                             projectRootPath));
                 }
 
@@ -47,8 +49,13 @@ namespace OpenQA.Selenium.Environment
                     javaExecutableName = javaExecutableName + ".exe";
                 }
 
+                string javaExecutablePath = string.Empty;
+                if (!string.IsNullOrEmpty(this.javaHomeDirectory))
+                {
+                    javaExecutablePath = Path.Combine(this.javaHomeDirectory, "bin");
+                }
+
                 List<string> javaSystemProperties = new List<string>();
-                javaSystemProperties.Add("org.openqa.selenium.environment.webserver.ignoreMissingJsRoots=true");
 
                 StringBuilder processArgsBuilder = new StringBuilder();
                 foreach (string systemProperty in javaSystemProperties)
@@ -69,11 +76,24 @@ namespace OpenQA.Selenium.Environment
                 processArgsBuilder.AppendFormat("-jar {0}", standaloneTestJar);
 
                 webserverProcess = new Process();
-                webserverProcess.StartInfo.FileName = javaExecutableName;
+                if (!string.IsNullOrEmpty(javaExecutablePath))
+                {
+                    webserverProcess.StartInfo.FileName = Path.Combine(javaExecutablePath, javaExecutableName);
+                }
+                else
+                {
+                    webserverProcess.StartInfo.FileName = javaExecutableName;
+                }
+
                 webserverProcess.StartInfo.Arguments = processArgsBuilder.ToString();
                 webserverProcess.StartInfo.WorkingDirectory = projectRootPath;
                 webserverProcess.StartInfo.UseShellExecute = !(hideCommandPrompt || captureWebServerOutput);
                 webserverProcess.StartInfo.CreateNoWindow = hideCommandPrompt;
+                if (!string.IsNullOrEmpty(this.javaHomeDirectory))
+                {
+                    webserverProcess.StartInfo.EnvironmentVariables["JAVA_HOME"] = this.javaHomeDirectory;
+                }
+
                 if (captureWebServerOutput)
                 {
                     webserverProcess.StartInfo.RedirectStandardOutput = true;

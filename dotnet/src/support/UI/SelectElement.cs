@@ -41,12 +41,14 @@ namespace OpenQA.Selenium.Support.UI
         {
             if (element == null)
             {
-                throw new ArgumentNullException("element", "element cannot be null");
+                throw new ArgumentNullException(nameof(element), "element cannot be null");
             }
 
-            if (string.IsNullOrEmpty(element.TagName) || string.Compare(element.TagName, "select", StringComparison.OrdinalIgnoreCase) != 0)
+            string tagName = element.TagName;
+
+            if (string.IsNullOrEmpty(tagName) || string.Compare(tagName, "select", StringComparison.OrdinalIgnoreCase) != 0)
             {
-                throw new UnexpectedTagNameException("select", element.TagName);
+                throw new UnexpectedTagNameException("select", tagName);
             }
 
             this.element = element;
@@ -136,7 +138,7 @@ namespace OpenQA.Selenium.Support.UI
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text", "text must not be null");
+                throw new ArgumentNullException(nameof(text), "text must not be null");
             }
 
             bool matched = false;

@@ -24,6 +24,7 @@ Safari 10 before testing.
 | Internet Explorer | [IEDriverServer.exe][release]      |
 | Edge              | [MicrosoftWebDriver.msi][edge]     |
 | Firefox           | [geckodriver(.exe)][geckodriver]   |
+| Opera             | [operadriver(.exe)][operadriver]   |
 | Safari            | [safaridriver]                     |
 
 ## Usage
@@ -32,10 +33,10 @@ The sample below and others are included in the `example` directory. You may
 also find the tests for selenium-webdriver informative.
 
 ```javascript
-const {Builder, By, Key, until} = require('selenium-webdriver');
+const {Builder, Browser, By, Key, until} = require('selenium-webdriver');
 
 (async function example() {
-  let driver = await new Builder().forBrowser('firefox').build();
+  let driver = await new Builder().forBrowser(Browser.FIREFOX).build();
   try {
     await driver.get('http://www.google.com/ncr');
     await driver.findElement(By.name('q')).sendKeys('webdriver', Key.RETURN);
@@ -59,7 +60,7 @@ const chrome = require('selenium-webdriver/chrome');
 const firefox = require('selenium-webdriver/firefox');
 
 let driver = new webdriver.Builder()
-    .forBrowser('firefox')
+    .forBrowser(webdriver.Browser.FIREFOX)
     .setChromeOptions(/* ... */)
     .setFirefoxOptions(/* ... */)
     .build();
@@ -98,7 +99,7 @@ API:
 
 ```javascript
 let driver = new webdriver.Builder()
-    .forBrowser('firefox')
+    .forBrowser(webdriver.Browser.FIREFOX)
     .usingServer('http://localhost:4444/wd/hub')
     .build();
 ```
@@ -117,13 +118,12 @@ Additional resources include
 
 - the #selenium channel on freenode IRC
 - the [selenium-users@googlegroups.com][users] list
-- [SeleniumHQ](http://www.seleniumhq.org/docs/) documentation
+- [SeleniumHQ](https://selenium.dev/documentation/) documentation
 
 ## Contributing
 
 Contributions are accepted either through [GitHub][gh] pull requests or patches
-via the [Selenium issue tracker][issues]. You must sign our
-[Contributor License Agreement][cla] before your changes will be accepted.
+via the [Selenium issue tracker][issues].
 
 ## Node Support Policy
 
@@ -217,13 +217,15 @@ under the License.
 [LTS]: https://github.com/nodejs/LTS
 [PATH]: http://en.wikipedia.org/wiki/PATH_%28variable%29
 [api]: http://seleniumhq.github.io/selenium/docs/api/javascript/module/selenium-webdriver/
-[cla]: http://goo.gl/qC50R
 [chrome]: http://chromedriver.storage.googleapis.com/index.html
 [gh]: https://github.com/SeleniumHQ/selenium/
 [issues]: https://github.com/SeleniumHQ/selenium/issues
 [edge]: http://go.microsoft.com/fwlink/?LinkId=619687
 [geckodriver]: https://github.com/mozilla/geckodriver/releases/
 [reduction]: http://www.webkit.org/quality/reduction.html
-[release]: http://selenium-release.storage.googleapis.com/index.html
+
+[release]: https://www.selenium.dev/downloads/
+
 [users]: https://groups.google.com/forum/#!forum/selenium-users
 [safaridriver]: https://developer.apple.com/library/prerelease/content/releasenotes/General/WhatsNewInSafari/Articles/Safari_10_0.html#//apple_ref/doc/uid/TP40014305-CH11-DontLinkElementID_28
+[operadriver]: https://github.com/operasoftware/operachromiumdriver/releases

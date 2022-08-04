@@ -6,6 +6,7 @@ filegroup(
         "**/*.js",
     ]),
     visibility = [
-        "//java/client/test/org/openqa/selenium/environment:__pkg__",
+        "//dotnet/test:__subpackages__",
+        "//java/test/org/openqa/selenium/environment:__pkg__",
     ],
 )

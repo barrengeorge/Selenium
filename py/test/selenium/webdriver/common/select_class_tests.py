@@ -18,7 +18,6 @@
 import pytest
 
 from selenium.common.exceptions import (
-    ElementNotSelectableException,
     NoSuchElementException,
     UnexpectedTagNameException)
 from selenium.webdriver.support.ui import Select
@@ -32,7 +31,7 @@ multiSelectValues1 = {'name': 'multi', 'values': ['Eggs', 'Ham', 'Sausages', 'On
 multiSelectValues2 = {'name': 'select_empty_multiple', 'values': ['select_1', 'select_2', 'select_3', 'select_4']}
 
 
-def testSelectByIndexSingle(driver, pages):
+def test_select_by_index_single(driver, pages):
     pages.load("formPage.html")
 
     for select in [singleSelectValues1]:
@@ -42,25 +41,18 @@ def testSelectByIndexSingle(driver, pages):
             assert sel.first_selected_option.text == select['values'][x]
 
 
-@pytest.mark.xfail_chrome
-@pytest.mark.xfail_firefox
+@pytest.mark.xfail_firefox(reason='https://bugzilla.mozilla.org/show_bug.cgi?id=1429403')
 @pytest.mark.xfail_remote
-@pytest.mark.xfail_marionette(reason='https://bugzilla.mozilla.org/show_bug.cgi?id=1429403')
-def testSelectDisabledByIndex(driver, pages):
+def test_select_disabled_by_index(driver, pages):
     pages.load("formPage.html")
     sel = Select(driver.find_element(By.NAME, disabledSelect['name']))
-    if driver.w3c:
-        selected = sel.first_selected_option
-        sel.select_by_index(1)
-        assert selected == sel.first_selected_option
-    else:
-        with pytest.raises(ElementNotSelectableException):
-            sel.select_by_index(1)
+    selected = sel.first_selected_option
+    sel.select_by_index(1)
+    assert selected == sel.first_selected_option
 
 
-def testSelectByValueSingle(driver, pages):
+def test_select_by_value_single(driver, pages):
     pages.load("formPage.html")
-
     for select in [singleSelectValues1]:
         sel = Select(driver.find_element(By.NAME, select['name']))
         for x in range(len(select['values'])):
@@ -68,23 +60,17 @@ def testSelectByValueSingle(driver, pages):
             assert sel.first_selected_option.text == select['values'][x]
 
 
-@pytest.mark.xfail_chrome
-@pytest.mark.xfail_firefox
+@pytest.mark.xfail_firefox(reason='https://bugzilla.mozilla.org/show_bug.cgi?id=1429403')
 @pytest.mark.xfail_remote
-@pytest.mark.xfail_marionette(reason='https://bugzilla.mozilla.org/show_bug.cgi?id=1429403')
-def testSelectDisabledByValue(driver, pages):
+def test_select_disabled_by_value(driver, pages):
     pages.load("formPage.html")
     sel = Select(driver.find_element(By.NAME, disabledSelect['name']))
-    if driver.w3c:
-        selected = sel.first_selected_option
-        sel.select_by_value('bar')
-        assert selected == sel.first_selected_option
-    else:
-        with pytest.raises(ElementNotSelectableException):
-            sel.select_by_value('bar')
+    selected = sel.first_selected_option
+    sel.select_by_value('bar')
+    assert selected == sel.first_selected_option
 
 
-def testSelectByVisibleTextSingle(driver, pages):
+def test_select_by_visible_text_single(driver, pages):
     pages.load("formPage.html")
 
     for select in [singleSelectValues1]:
@@ -95,36 +81,33 @@ def testSelectByVisibleTextSingle(driver, pages):
             assert sel.first_selected_option.text == select['values'][x]
 
 
-@pytest.mark.xfail_chrome(
-    reason='https://bugs.chromium.org/p/chromedriver/issues/detail?id=822')
-def testSelectByVisibleTextShouldNormalizeSpaces(driver, pages):
-    pages.load("formPage.html")
+# @pytest.mark.xfail_chrome(
+#     reason='https://bugs.chromium.org/p/chromedriver/issues/detail?id=822')
+# @pytest.mark.xfail_chromiumedge(
+#     reason='https://bugs.chromium.org/p/chromedriver/issues/detail?id=822')
+# @pytest.mark.xfail_safari
+# def test_select_by_visible_text_should_normalize_spaces(driver, pages):
+#     pages.load("formPage.html")
 
-    for select in [singleSelectValuesWithSpaces]:
-        sel = Select(driver.find_element(By.NAME, select['name']))
-        for x in range(len(select['values'])):
-            print(select['values'][x])
-            sel.select_by_visible_text(select['values'][x])
-            assert sel.first_selected_option.text == select['values'][x]
+#     for select in [singleSelectValuesWithSpaces]:
+#         sel = Select(driver.find_element(By.NAME, select['name']))
+#         for x in range(len(select['values'])):
+#             print(select['values'][x])
+#             sel.select_by_visible_text(select['values'][x])
+#             assert sel.first_selected_option.text == select['values'][x]
 
 
-@pytest.mark.xfail_chrome
-@pytest.mark.xfail_firefox
+@pytest.mark.xfail_firefox(reason='https://bugzilla.mozilla.org/show_bug.cgi?id=1429403')
 @pytest.mark.xfail_remote
-@pytest.mark.xfail_marionette(reason='https://bugzilla.mozilla.org/show_bug.cgi?id=1429403')
-def testSelectDisabledByVisibleText(driver, pages):
+def test_select_disabled_by_visible_text(driver, pages):
     pages.load("formPage.html")
     sel = Select(driver.find_element(By.NAME, disabledSelect['name']))
-    if driver.w3c:
-        selected = sel.first_selected_option
-        sel.select_by_visible_text('Bar')
-        assert selected == sel.first_selected_option
-    else:
-        with pytest.raises(ElementNotSelectableException):
-            sel.select_by_visible_text('Bar')
+    selected = sel.first_selected_option
+    sel.select_by_visible_text('Bar')
+    assert selected == sel.first_selected_option
 
 
-def testSelectByIndexMultiple(driver, pages):
+def test_select_by_index_multiple(driver, pages):
     pages.load("formPage.html")
 
     for select in [multiSelectValues1, multiSelectValues2]:
@@ -138,7 +121,7 @@ def testSelectByIndexMultiple(driver, pages):
                 assert selected[j].text == select['values'][j]
 
 
-def testSelectByValueMultiple(driver, pages):
+def test_select_by_value_multiple(driver, pages):
     pages.load("formPage.html")
 
     for select in [multiSelectValues1, multiSelectValues2]:
@@ -152,7 +135,7 @@ def testSelectByValueMultiple(driver, pages):
                 assert selected[j].text == select['values'][j]
 
 
-def testSelectByVisibleTextMultiple(driver, pages):
+def test_select_by_visible_text_multiple(driver, pages):
     pages.load("formPage.html")
 
     for select in [multiSelectValues1, multiSelectValues2]:
@@ -166,14 +149,14 @@ def testSelectByVisibleTextMultiple(driver, pages):
                 assert selected[j].text == select['values'][j]
 
 
-def testDeselectAllSingle(driver, pages):
+def test_deselect_all_single(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2]:
         with pytest.raises(NotImplementedError):
             Select(driver.find_element(By.NAME, select['name'])).deselect_all()
 
 
-def testDeselectAllMultiple(driver, pages):
+def test_deselect_all_multiple(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         sel = Select(driver.find_element(By.NAME, select['name']))
@@ -181,28 +164,28 @@ def testDeselectAllMultiple(driver, pages):
         assert len(sel.all_selected_options) == 0
 
 
-def testDeselectByIndexSingle(driver, pages):
+def test_deselect_by_index_single(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2]:
         with pytest.raises(NotImplementedError):
             Select(driver.find_element(By.NAME, select['name'])).deselect_by_index(0)
 
 
-def testDeselectByValueSingle(driver, pages):
+def test_deselect_by_value_single(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2]:
         with pytest.raises(NotImplementedError):
             Select(driver.find_element(By.NAME, select['name'])).deselect_by_value(select['values'][0].lower())
 
 
-def testDeselectByVisibleTextSingle(driver, pages):
+def test_deselect_by_visible_text_single(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2]:
         with pytest.raises(NotImplementedError):
             Select(driver.find_element(By.NAME, select['name'])).deselect_by_visible_text(select['values'][0])
 
 
-def testDeselectByIndexMultiple(driver, pages):
+def test_deselect_by_index_multiple(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         sel = Select(driver.find_element(By.NAME, select['name']))
@@ -219,7 +202,7 @@ def testDeselectByIndexMultiple(driver, pages):
         assert selected[1].text == select['values'][2]
 
 
-def testDeselectByValueMultiple(driver, pages):
+def test_deselect_by_value_multiple(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         sel = Select(driver.find_element(By.NAME, select['name']))
@@ -236,7 +219,7 @@ def testDeselectByValueMultiple(driver, pages):
         assert selected[1].text == select['values'][2]
 
 
-def testDeselectByVisibleTextMultiple(driver, pages):
+def test_deselect_by_visible_text_multiple(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         sel = Select(driver.find_element(By.NAME, select['name']))
@@ -253,7 +236,7 @@ def testDeselectByVisibleTextMultiple(driver, pages):
         assert selected[1].text == select['values'][2]
 
 
-def testGetOptions(driver, pages):
+def test_get_options(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2, multiSelectValues1, multiSelectValues2]:
         opts = Select(driver.find_element(By.NAME, select['name'])).options
@@ -262,7 +245,7 @@ def testGetOptions(driver, pages):
             assert opts[i].text == select['values'][i]
 
 
-def testGetAllSelectedOptionsSingle(driver, pages):
+def test_get_all_selected_options_single(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2, disabledSelect]:
         opts = Select(driver.find_element(By.NAME, select['name'])).all_selected_options
@@ -270,7 +253,7 @@ def testGetAllSelectedOptionsSingle(driver, pages):
         assert opts[0].text == select['values'][0]
 
 
-def testGetAllSelectedOptionsMultiple(driver, pages):
+def test_get_all_selected_options_multiple(driver, pages):
     pages.load("formPage.html")
     opts = Select(driver.find_element(By.NAME, multiSelectValues1['name'])).all_selected_options
     assert len(opts) == 2
@@ -280,14 +263,14 @@ def testGetAllSelectedOptionsMultiple(driver, pages):
     assert len(opts) == 0
 
 
-def testGetFirstSelectedOptionSingle(driver, pages):
+def test_get_first_selected_option_single(driver, pages):
     pages.load("formPage.html")
     for select in [singleSelectValues1, singleSelectValues2]:
         opt = Select(driver.find_element(By.NAME, select['name'])).first_selected_option
         assert opt.text == select['values'][0]
 
 
-def testGetFirstSelectedOptionMultiple(driver, pages):
+def test_get_first_selected_option_multiple(driver, pages):
     pages.load("formPage.html")
     opt = Select(driver.find_element(By.NAME, multiSelectValues1['name'])).first_selected_option
     assert opt.text == multiSelectValues1['values'][0]
@@ -295,27 +278,27 @@ def testGetFirstSelectedOptionMultiple(driver, pages):
     assert len(opt) == 0
 
 
-def testRaisesExceptionForInvalidTagName(driver, pages):
+def test_raises_exception_for_invalid_tag_name(driver, pages):
     pages.load("formPage.html")
     with pytest.raises(UnexpectedTagNameException):
         Select(driver.find_element(By.TAG_NAME, "div"))
 
 
-def testDeselectByIndexNonExistent(driver, pages):
+def test_deselect_by_index_non_existent(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         with pytest.raises(NoSuchElementException):
             Select(driver.find_element(By.NAME, select['name'])).deselect_by_index(10)
 
 
-def testDeselectByValueNonExistent(driver, pages):
+def test_deselect_by_value_non_existent(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         with pytest.raises(NoSuchElementException):
             Select(driver.find_element(By.NAME, select['name'])).deselect_by_value('not there')
 
 
-def testDeselectByTextNonExistent(driver, pages):
+def test_deselect_by_text_non_existent(driver, pages):
     pages.load("formPage.html")
     for select in [multiSelectValues1, multiSelectValues2]:
         with pytest.raises(NoSuchElementException):

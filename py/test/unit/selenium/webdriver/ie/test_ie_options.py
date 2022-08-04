@@ -101,7 +101,7 @@ def test_ignore_zoom_level(opts):
 
 
 def test_initial_browser_url(opts):
-    url = 'http://www.seleniumhq.org'
+    url = 'http://www.selenium.dev'
     opts.initial_browser_url = url
     assert opts.initial_browser_url == url
     assert opts.options.get(Options.INITIAL_BROWSER_URL) == url
@@ -131,10 +131,23 @@ def test_use_per_process_proxy(opts):
     assert opts.options.get(Options.USE_PER_PROCESS_PROXY) is True
 
 
-def test_validate_cookie_document_type(opts):
-    opts.validate_cookie_document_type = True
-    assert opts.validate_cookie_document_type is True
-    assert opts.options.get(Options.VALIDATE_COOKIE_DOCUMENT_TYPE) is True
+def test_use_legacy_file_upload_dialog_handling(opts):
+    opts.use_legacy_file_upload_dialog_handling = True
+    assert opts.use_legacy_file_upload_dialog_handling is True
+    assert opts.options.get(Options.USE_LEGACY_FILE_UPLOAD_DIALOG_HANDLING) is True
+
+
+def test_attach_to_edge_chrome(opts):
+    opts.attach_to_edge_chrome = True
+    assert opts.attach_to_edge_chrome is True
+    assert opts.options.get(Options.ATTACH_TO_EDGE_CHROME) is True
+
+
+def test_edge_executable_path(opts):
+    path = '/path/to/edge'
+    opts.edge_executable_path = path
+    assert opts.edge_executable_path == path
+    assert opts.options.get(Options.EDGE_EXECUTABLE_PATH) == path
 
 
 def test_additional_options(opts):
@@ -176,7 +189,9 @@ def test_to_capabilities_should_not_modify_set_options(opts):
 
 def test_starts_with_default_capabilities(opts):
     from selenium.webdriver import DesiredCapabilities
-    assert opts._caps == DesiredCapabilities.INTERNETEXPLORER
+    caps = DesiredCapabilities.INTERNETEXPLORER.copy()
+    caps.update({"pageLoadStrategy": "normal"})
+    assert opts._caps == caps
 
 
 def test_is_a_baseoptions(opts):

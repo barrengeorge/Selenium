@@ -27,7 +27,10 @@ module Selenium
           @create_driver_error = nil
           @create_driver_error_count = 0
 
-          @driver = (ENV['WD_SPEC_DRIVER'] || :chrome).to_sym
+          extract_browser_from_bazel_target_name
+
+          @driver = ENV.fetch('WD_SPEC_DRIVER', :chrome).to_sym
+          @driver_instance = nil
         end
 
         def print_env
@@ -44,11 +47,11 @@ module Selenium
         end
 
         def browser
-          driver == :remote ? (ENV['WD_REMOTE_BROWSER'] || :chrome).to_sym : driver
+          driver == :remote ? ENV.fetch('WD_REMOTE_BROWSER', 'chrome').to_sym : driver
         end
 
         def driver_instance
-          @driver_instance ||= create_driver!
+          @driver_instance || create_driver!
         end
 
         def reset_driver!(time = 0)
@@ -59,7 +62,7 @@ module Selenium
 
         # TODO: optimize since this approach is not assured on IE
         def ensure_single_window
-          driver_instance.window_handles[1..-1].each do |handle|
+          driver_instance.window_handles[1..].each do |handle|
             driver_instance.switch_to.window(handle)
             driver_instance.close
           end
@@ -99,13 +102,18 @@ module Selenium
         end
 
         def remote_server_jar
-          file_name = "selenium-server-standalone-#{Selenium::Server.latest}.jar"
-          locations = ["#{root}/#{file_name}", "#{root.join('rb/')}#{file_name}"]
-          @remote_server_jar = locations.find { |file| File.exist?(file) }
-          return @remote_server_jar if @remote_server_jar
+          test_jar = "#{Pathname.new(Dir.pwd).join('rb')}/selenium_server_deploy.jar"
+          built_jar = root.join('bazel-bin/java/src/org/openqa/selenium/grid/selenium_server_deploy.jar')
+          jar = if File.exist?(test_jar) && ENV['DOWNLOAD_SERVER'].nil?
+                  test_jar
+                elsif File.exist?(built_jar) && ENV['DOWNLOAD_SERVER'].nil?
+                  built_jar
+                else
+                  Selenium::Server.download
+                end
 
-          Selenium::Server.download(:latest)
-          @remote_server_jar = locations.find { |file| File.exist?(file) }
+          WebDriver.logger.info "Server Location: #{jar}"
+          jar.to_s
         end
 
         def quit
@@ -126,19 +134,6 @@ module Selenium
           @root ||= Pathname.new('../../../../../../../').realpath(__FILE__)
         end
 
-        def remote_capabilities
-          opt = {}
-          browser_name = case browser
-                         when :safari_preview
-                           opt["safari.options"] = {technology_preview: true}
-                           :safari
-                         else
-                           browser
-                         end
-
-          WebDriver::Remote::Capabilities.send(browser_name, opt)
-        end
-
         def create_driver!(**opts, &block)
           check_for_previous_error
 
@@ -156,12 +151,12 @@ module Selenium
               instance.quit
             end
           else
-            instance
+            @driver_instance = instance
           end
-        rescue => ex
-          @create_driver_error = ex
+        rescue StandardError => e
+          @create_driver_error = e
           @create_driver_error_count += 1
-          raise ex
+          raise e
         end
 
         private
@@ -184,32 +179,43 @@ module Selenium
         def check_for_previous_error
           return unless @create_driver_error && @create_driver_error_count >= MAX_ERRORS
 
-          msg = "previous #{@create_driver_error_count} instantiations of driver #{driver.inspect} failed, not trying again"
-          msg += " (#{@create_driver_error.message})"
+          msg = "previous #{@create_driver_error_count} instantiations of driver #{driver.inspect} failed,"
+          msg += " not trying again (#{@create_driver_error.message})"
 
           raise DriverInstantiationError, msg, @create_driver_error.backtrace
         end
 
         def create_remote_driver(opt = {})
-          opt[:desired_capabilities] = remote_capabilities
-          opt[:url] = ENV['WD_REMOTE_URL'] || remote_server.webdriver_url
+          options = opt.delete(:capabilities)
+          opt[:capabilities] = [WebDriver::Remote::Capabilities.send(browser)]
+          opt[:capabilities] << options if options
+          opt[:url] = ENV.fetch('WD_REMOTE_URL', remote_server.webdriver_url)
           opt[:http_client] ||= WebDriver::Remote::Http::Default.new
 
           WebDriver::Driver.for(:remote, opt)
         end
 
         def create_firefox_driver(opt = {})
-          WebDriver::Firefox::Binary.path = ENV['FIREFOX_BINARY'] if ENV['FIREFOX_BINARY']
+          WebDriver::Firefox.path = ENV.fetch('FIREFOX_BINARY', nil) if ENV.key?('FIREFOX_BINARY')
           WebDriver::Driver.for :firefox, opt
         end
 
+        def create_firefox_nightly_driver(opt = {})
+          ENV['FIREFOX_BINARY'] = ENV.fetch('FIREFOX_NIGHTLY_BINARY', nil)
+          opt[:capabilities] = [
+            WebDriver::Firefox::Options.new(debugger_address: true),
+            WebDriver::Remote::Capabilities.firefox(web_socket_url: true)
+          ]
+          create_firefox_driver(opt)
+        end
+
         def create_ie_driver(opt = {})
-          opt[:options] = WebDriver::IE::Options.new(require_window_focus: true)
+          opt[:capabilities] = WebDriver::IE::Options.new(require_window_focus: true)
           WebDriver::Driver.for :ie, opt
         end
 
         def create_chrome_driver(opt = {})
-          WebDriver::Chrome.path = ENV['CHROME_BINARY'] if ENV['CHROME_BINARY']
+          WebDriver::Chrome.path = ENV.fetch('CHROME_BINARY', nil) if ENV.key?('CHROME_BINARY')
           WebDriver::Driver.for :chrome, opt
         end
 
@@ -218,9 +224,24 @@ module Selenium
           WebDriver::Driver.for :safari, opt
         end
 
-        def create_edge_chrome_driver(opt = {})
-          WebDriver::EdgeChrome.path = ENV['EDGE_BINARY'] if ENV['EDGE_BINARY']
-          WebDriver::Driver.for :edge_chrome, opt
+        def create_edge_driver(opt = {})
+          WebDriver::Edge.path = ENV.fetch('EDGE_BINARY', nil) if ENV.key?('EDGE_BINARY')
+          WebDriver::Driver.for :edge, opt
+        end
+
+        def extract_browser_from_bazel_target_name
+          name = ENV.fetch('TEST_TARGET', nil)
+          return unless name
+
+          case name
+          when %r{//rb:remote-(.+)-test}
+            ENV['WD_REMOTE_BROWSER'] = Regexp.last_match(1).tr('-', '_')
+            ENV['WD_SPEC_DRIVER'] = 'remote'
+          when %r{//rb:(.+)-test}
+            ENV['WD_SPEC_DRIVER'] = Regexp.last_match(1).tr('-', '_')
+          else
+            raise "Don't know how to extract browser name from #{name}"
+          end
         end
       end
     end # SpecSupport
